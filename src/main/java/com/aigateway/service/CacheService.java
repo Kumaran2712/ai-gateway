@@ -17,8 +17,7 @@ public class CacheService {
         return redisTemplate.opsForValue().get(key);
     }
 
-    public void set(String key, String value){
+    public void set(String key, String value) {
         redisTemplate.opsForValue().set(key, value, 1, TimeUnit.HOURS);
     }
-    
 }

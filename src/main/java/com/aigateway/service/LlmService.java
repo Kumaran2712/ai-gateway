@@ -1,46 +1,37 @@
 package com.aigateway.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import com.aigateway.provider.LlmProvider;
+import com.aigateway.provider.OllamaProvider;
+import com.aigateway.provider.OpenAIProvider;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class LlmService {
 
-    private final RestTemplate restTemplate;
+    private final OllamaProvider ollamaProvider;
+    private final OpenAIProvider openAIProvider;
 
-    public LlmService() {
-        this.restTemplate = new RestTemplate();
+    public LlmService(OllamaProvider ollamaProvider, OpenAIProvider openAIProvider) {
+        this.ollamaProvider = ollamaProvider;
+        this.openAIProvider = openAIProvider;
     }
 
-    public Map<String,Object> generate(String prompt) {
-        String url = "http://localhost:11434/api/generate";
-        
-        // Create request body
-        Map<String, Object> requestBody = Map.of(
-            "model", "llama3.2:1b",
-            "prompt", prompt,
-            "stream", false
-        );
+    public Map<String, Object> generate(String prompt) {
+        return generate(prompt, "ollama");
+    }
 
-        // Create headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    public Map<String, Object> generate(String prompt, String provider) {
+        LlmProvider selectedProvider = switch (provider.toLowerCase()) {
+            case "openai" -> openAIProvider;
+            case "ollama" -> ollamaProvider;
+            default -> ollamaProvider;
+        };
 
-        // Create request
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
-
-        // Send request and get response
-        Map<String,Object> response = restTemplate.postForObject(url, request, Map.class);
-
-        // Extract the generated text
-        return Map.of(
-            "response", response.get("response"),
-            "prompt_tokens", response.get("prompt_eval_count"),
-            "completion_tokens", response.get("eval_count")    
-        );
+        Map<String, Object> response = selectedProvider.generate(prompt);
+        response = new HashMap<>(response);
+        response.put("provider", selectedProvider.getName());
+        return response;
     }
 }

@@ -35,6 +35,7 @@ public class GatewayController {
 
         // Extract prompt and generate response
         String prompt = (String) body.get("prompt");
+        String provider = (String) body.getOrDefault("provider", "ollama");
         String cachedResponse = cacheService.get(prompt);
         if (cachedResponse != null) {
             return Map.of(
@@ -45,7 +46,7 @@ public class GatewayController {
                 "cached", true
             );
         }
-        Map<String, Object> response = llmService.generate(prompt);
+        Map<String, Object> response = llmService.generate(prompt, provider);
         String answer = (String) response.get("response");
         int promptTokens = (int) response.get("prompt_tokens");
         int completionTokens = (int) response.get("completion_tokens");
@@ -59,6 +60,7 @@ public class GatewayController {
             "prompt_tokens", promptTokens,
             "completion_tokens", completionTokens,
             "total_tokens", totalTokens,
+            "provider", provider,
             "cached", false
         );
     }
